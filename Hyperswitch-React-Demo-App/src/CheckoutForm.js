@@ -126,10 +126,10 @@ export default function CheckoutForm() {
           <>
             <Cart />
             <div className="payment-form">
-              <form id="payment-form" onSubmit={handleSubmit}>
-                <div class="paymentElement">
+              <form id="unified-checkout" onSubmit={handleSubmit}>
+                {/* <div class="paymentElement">
                   <PaymentElement id="payment-element" options={options} />
-                </div>
+                </div> */}
                 <button
                   disabled={isProcessing || !hyper || !elements}
                   id="submit"

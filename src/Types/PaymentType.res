@@ -121,6 +121,7 @@ type customerMethods = {
   paymentToken: string,
   customerId: string,
   paymentMethod: string,
+  paymentMethodId: string,
   paymentMethodIssuer: option<string>,
   card: customerCard,
   paymentMethodType: option<string>,
@@ -146,6 +147,7 @@ type options = {
   layout: layoutType,
   business: business,
   customerPaymentMethods: savedCardsLoadState,
+  savedPaymentMethods: savedCardsLoadState,
   paymentMethodOrder: option<array<string>>,
   displaySavedPaymentMethodsCheckbox: bool,
   displaySavedPaymentMethods: bool,
@@ -176,6 +178,7 @@ let defaultCustomerMethods = {
   paymentToken: "",
   customerId: "",
   paymentMethod: "",
+  paymentMethodId: "",
   paymentMethodIssuer: None,
   card: defaultCardDetails,
   paymentMethodType: None,
@@ -276,6 +279,7 @@ let defaultOptions = {
   defaultValues: defaultDefaultValues,
   business: defaultBusiness,
   customerPaymentMethods: LoadingSavedCards,
+  savedPaymentMethods: LoadingSavedCards,
   layout: ObjectLayout(defaultLayout),
   paymentMethodOrder: None,
   fields: defaultFields,
@@ -804,10 +808,10 @@ let getPaymentMethodType = dict => {
   dict->Dict.get("payment_method_type")->Option.flatMap(JSON.Decode.string)
 }
 
-let createCustomerObjArr = dict => {
+let createCustomerObjArr = (dict, key) => {
   let customerDict =
     dict
-    ->Dict.get("customerPaymentMethods")
+    ->Dict.get(key)
     ->Option.flatMap(JSON.Decode.object)
     ->Option.getOr(Dict.make())
 
@@ -831,6 +835,7 @@ let createCustomerObjArr = dict => {
         paymentToken: getString(dict, "payment_token", ""),
         customerId: getString(dict, "customer_id", ""),
         paymentMethod: getString(dict, "payment_method", ""),
+        paymentMethodId: getString(dict, "payment_method_id", ""),
         paymentMethodIssuer: Some(getString(dict, "payment_method_issuer", "")),
         card: getCardDetails(dict, "card"),
         paymentMethodType: getPaymentMethodType(dict),
@@ -853,6 +858,7 @@ let getCustomerMethods = (dict, str) => {
           paymentToken: getString(json, "payment_token", ""),
           customerId: getString(json, "customer_id", ""),
           paymentMethod: getString(json, "payment_method", ""),
+          paymentMethodId: getString(dict, "payment_method_id", ""),
           paymentMethodIssuer: Some(getString(json, "payment_method_issuer", "")),
           card: getCardDetails(json, "card"),
           paymentMethodType: getPaymentMethodType(dict),
@@ -949,6 +955,7 @@ let itemToObjMapper = (dict, logger) => {
     business: getBusiness(dict, "business", logger),
     layout: getLayout(dict, "layout", logger),
     customerPaymentMethods: getCustomerMethods(dict, "customerPaymentMethods"),
+    savedPaymentMethods: getCustomerMethods(dict, "customerPaymentMethods"),
     paymentMethodOrder: getOptionalStrArray(dict, "paymentMethodOrder"),
     fields: getFields(dict, "fields", logger),
     branding: getWarningString(dict, "branding", "auto", ~logger)->getShowType(

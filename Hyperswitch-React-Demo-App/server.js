@@ -60,6 +60,7 @@ app.get("/create-payment-intent", async (req, res) => {
       customer_id: "hyperswitch_sdk_demo_id",
       email: "hyperswitch_sdk_demo_id@gmail.com",
       description: "Hello this is description",
+      profile_id: "pro_E6k4XxWE3fVzTIYDMzJa",
       // allowed_payment_method_types:["sofort"],
       shipping: {
         address: {
