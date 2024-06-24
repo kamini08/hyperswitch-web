@@ -17,7 +17,6 @@ let make = (~brandIcon, ~paymentItem: PaymentType.customerMethods) => {
   }
 
   let handleDelete = e => {
-    Console.log2("methodID", paymentItem.paymentMethodId)
     open Promise
     PaymentHelpers.deletePaymentMethod(
       ~ephimeralKey=config.ephimeralKey,
@@ -25,12 +24,10 @@ let make = (~brandIcon, ~paymentItem: PaymentType.customerMethods) => {
       ~logger,
       ~switchToCustomPod,
     )
-    ->then(res => {
-      Console.log2("deleted paymentId", res)
+    ->then(_ => {
       resolve()
     })
-    ->catch(err => {
-      Console.log2("deleting error ", err)
+    ->catch(_ => {
       resolve()
     })
     ->ignore

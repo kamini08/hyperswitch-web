@@ -572,6 +572,7 @@ let make = (publishableKey, options: option<JSON.t>, analyticsInfo: option<JSON.
           ~clientSecret={clientSecretId},
           ~publishableKey,
           ~logger=Some(logger),
+          ~ephimeralKey=ephimeralKey.contents,
         )
       }
 

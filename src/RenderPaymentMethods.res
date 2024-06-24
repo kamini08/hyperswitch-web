@@ -149,6 +149,7 @@ let make = (
             </RenderIf>}>
             <PaymentManagementLazy />
           </React.Suspense>
+        | PaymentRequestButtonsElement
         | NONE => React.null
         }}
       </div>

@@ -1,3 +1,7 @@
+open Promise
+open Types
+open Utils
+
 let getCustomerSavedPaymentMethods = (
   ~clientSecret,
   ~publishableKey,
@@ -5,9 +9,6 @@ let getCustomerSavedPaymentMethods = (
   ~logger,
   ~switchToCustomPod,
 ) => {
-  open Promise
-  open Types
-  open Utils
   PaymentHelpers.fetchCustomerPaymentMethodList(
     ~clientSecret,
     ~publishableKey,
@@ -195,4 +196,66 @@ let getCustomerSavedPaymentMethods = (
       ]->getJsonFromArrayOfJson
     updatedCustomerDetails->resolve
   })
+}
+
+let getPaymentManagementMethods = (~ephimeralKey, ~logger, ~switchToCustomPod, ~endpoint) => {
+  let getSavedPaymentManagementMethodsList = _ => {
+    PaymentHelpers.fetchSavedPaymentMethodList(
+      ~ephimeralKey,
+      ~optLogger=Some(logger),
+      ~switchToCustomPod=false,
+      ~endpoint,
+    )
+    ->then(response => {
+      response->resolve
+    })
+    ->catch(err => {
+      let exceptionMessage = err->formatException->JSON.stringify
+      let updatedCustomerDetails =
+        [
+          (
+            "error",
+            [
+              ("type", "server_error"->JSON.Encode.string),
+              ("message", exceptionMessage->JSON.Encode.string),
+            ]->getJsonFromArrayOfJson,
+          ),
+        ]->getJsonFromArrayOfJson
+      updatedCustomerDetails->resolve
+    })
+  }
+
+  let deleteSavedPaymentMethod = paymentMethodId => {
+    PaymentHelpers.deletePaymentMethod(
+      ~ephimeralKey,
+      ~paymentMethodId={paymentMethodId->JSON.Decode.string->Option.getOr("")},
+      ~logger,
+      ~switchToCustomPod,
+    )
+    ->then(response => {
+      response->resolve
+    })
+    ->catch(err => {
+      let exceptionMessage = err->formatException->JSON.stringify
+      let updatedCustomerDetails =
+        [
+          (
+            "error",
+            [
+              ("type", "server_error"->JSON.Encode.string),
+              ("message", exceptionMessage->JSON.Encode.string),
+            ]->getJsonFromArrayOfJson,
+          ),
+        ]->getJsonFromArrayOfJson
+
+      updatedCustomerDetails->resolve
+    })
+  }
+
+  {
+    getSavedPaymentManagementMethodsList,
+    deleteSavedPaymentMethod,
+  }
+  ->Identity.anyTypeToJson
+  ->resolve
 }

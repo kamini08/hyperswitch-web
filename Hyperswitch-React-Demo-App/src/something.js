@@ -8,7 +8,7 @@ export const loadSDK = (clientSecret, pubkey) => {
     const appearance = {
       theme: "charcoal",
     };
-    const ephimeralKey = "epk_199235de39aa4ca08c596a98635e6bbb";
+    const ephimeralKey = "epk_8dd34bfa79b1483b9f9a56ba9ad23009";
     const widgets = hyper.widgets({ appearance, clientSecret, ephimeralKey });
     const unifiedCheckoutOptions = {
       layout: "tabs",
