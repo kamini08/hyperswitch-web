@@ -1,4 +1,4 @@
-type wallet = GPayWallet | PaypalWallet | ApplePayWallet | NONE
+type wallet = GPayWallet | PaypalWallet | ApplePayWallet | KlarnaWallet | NONE
 let paymentMode = str => {
   switch str {
   | "gpay"
@@ -8,6 +8,7 @@ let paymentMode = str => {
   | "applepay"
   | "apple_pay" =>
     ApplePayWallet
+  | "klarna" => KlarnaWallet
   | _ => NONE
   }
 }
@@ -56,14 +57,16 @@ let make = (~sessions, ~walletOptions, ~paymentType) => {
     Gpay,
   )
 
+  let klarnaTokenObj = SessionsType.getPaymentSessionObj(sessionObj.sessionsToken, Klarna)
+
   let {clientSecret} = Recoil.useRecoilValueFromAtom(RecoilAtoms.keys)
 
   <div className="flex flex-col gap-2 h-auto w-full">
     {walletOptions
     ->Array.mapWithIndex((item, i) => {
       <ErrorBoundary
-        level={ErrorBoundary.RequestButton} key={`${item}-${i->Belt.Int.toString}-request-button`}>
-        <React.Suspense fallback={<WalletShimmer />} key={i->Belt.Int.toString}>
+        level={ErrorBoundary.RequestButton} key={`${item}-${i->Int.toString}-request-button`}>
+        <React.Suspense fallback={<WalletShimmer />} key={i->Int.toString}>
           {switch clientSecret {
           | Some(_) =>
             switch item->paymentMode {
@@ -97,6 +100,17 @@ let make = (~sessions, ~walletOptions, ~paymentType) => {
               | ApplePayTokenOptional(optToken) => <ApplePayLazy sessionObj=optToken />
               | _ => React.null
               }
+            | KlarnaWallet =>
+              <SessionPaymentWrapper type_=Others>
+                {switch klarnaTokenObj {
+                | OtherTokenOptional(optToken) =>
+                  switch optToken {
+                  | Some(token) => <KlarnaSDKLazy sessionObj=token />
+                  | None => React.null
+                  }
+                | _ => React.null
+                }}
+              </SessionPaymentWrapper>
 
             | NONE => React.null
             }

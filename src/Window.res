@@ -60,13 +60,17 @@ external style: Dom.element => style = "style"
 @send external paymentRequest: (JSON.t, JSON.t, JSON.t) => JSON.t = "PaymentRequest"
 @send external click: Dom.element => unit = "click"
 
+let sendPostMessage = (element, message) => {
+  element->postMessage(message->JSON.Encode.object->JSON.stringify, GlobalVars.targetOrigin)
+}
+
 let iframePostMessage = (iframeRef: nullable<Dom.element>, message) => {
   switch iframeRef->Nullable.toOption {
   | Some(ref) =>
     try {
       ref
       ->contentWindow
-      ->postMessage(message->JSON.Encode.object->JSON.stringify, GlobalVars.targetOrigin)
+      ->sendPostMessage(message)
     } catch {
     | _ => ()
     }
@@ -118,10 +122,13 @@ external sendBeacon: (string, string) => unit = "sendBeacon"
 external hostname: string = "hostname"
 
 @val @scope(("window", "location"))
-external href: string = "href"
+external origin: string = "origin"
 
 @val @scope(("window", "location"))
 external protocol: string = "protocol"
+
+@val @scope(("window", "location"))
+external pathname: string = "pathname"
 
 let isSandbox = hostname === "beta.hyperswitch.io"
 
@@ -136,3 +143,5 @@ module Location = {
 module Element = {
   @get external clientWidth: Dom.element => int = "clientWidth"
 }
+
+let hrefWithoutSearch = origin ++ pathname

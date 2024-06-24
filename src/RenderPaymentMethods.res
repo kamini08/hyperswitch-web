@@ -15,6 +15,7 @@ let make = (
   let (
     isCardValid,
     setIsCardValid,
+    _,
     cardNumber,
     changeCardNumber,
     handleCardBlur,
@@ -81,7 +82,8 @@ let make = (
         | GooglePayElement
         | PayPalElement
         | ApplePayElement
-        | PaymentRequestButtonsElement
+        | KlarnaElement
+        | ExpressCheckoutElement
         | Payment =>
           <React.Suspense
             fallback={<RenderIf condition={showLoader}>
@@ -119,7 +121,7 @@ let make = (
             paymentType
             maxLength=7
             inputRef=expiryRef
-            placeholder="MM / YY"
+            placeholder=localeString.expiryPlaceholder
             id="card-expiry"
             isFocus
           />

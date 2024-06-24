@@ -11,6 +11,7 @@ type paymentMethodsFields =
   | None
   | BillingName
   | PhoneNumber
+  | PhoneCountryCode
   | AddressLine1
   | AddressLine2
   | AddressCity
@@ -34,6 +35,8 @@ type paymentMethodsFields =
   | ShippingAddressPincode
   | ShippingAddressState
   | ShippingAddressCountry(array<string>)
+  | CryptoCurrencyNetworks
+  | DateOfBirth
 
 let getPaymentMethodsFieldsOrder = paymentMethodField => {
   switch paymentMethodField {
@@ -47,10 +50,11 @@ let getPaymentMethodsFieldsOrder = paymentMethodField => {
   | AddressLine2 => 5
   | AddressCity => 6
   | AddressState => 7
-  | AddressCountry(_) => 8
-  | AddressPincode => 9
   | StateAndCity => 7
+  | AddressCountry(_) => 8
   | CountryAndPincode(_) => 8
+  | AddressPincode => 9
+  | CryptoCurrencyNetworks => 10
   | InfoElement => 99
   | _ => 3
   }
@@ -116,7 +120,7 @@ let icon = (~size=22, ~width=size, name) => {
 let paymentMethodsFields = [
   {
     paymentMethodName: "afterpay_clearpay",
-    fields: [Email, FullName, InfoElement],
+    fields: [InfoElement],
     icon: Some(icon("afterpay", ~size=19)),
     displayName: "After Pay",
     miniIcon: None,
@@ -154,6 +158,13 @@ let paymentMethodsFields = [
     fields: [InfoElement],
     icon: Some(icon("alipay", ~size=19)),
     displayName: "Ali Pay",
+    miniIcon: None,
+  },
+  {
+    paymentMethodName: "ali_pay_hk",
+    fields: [InfoElement],
+    icon: Some(icon("alipayhk", ~size=19)),
+    displayName: "Ali Pay HK",
     miniIcon: None,
   },
   {
@@ -506,6 +517,13 @@ let paymentMethodsFields = [
     displayName: "Local Bank Transfer",
     miniIcon: None,
   },
+  {
+    paymentMethodName: "mifinity",
+    fields: [InfoElement],
+    icon: Some(icon("mifinity")),
+    displayName: "Mifinity",
+    miniIcon: None,
+  },
 ]
 
 type required_fields = {
@@ -539,6 +557,9 @@ let getPaymentMethodsFieldTypeFromString = (str, isBancontact) => {
   | ("user_shipping_address_city", _) => ShippingAddressCity
   | ("user_shipping_address_pincode", _) => ShippingAddressPincode
   | ("user_shipping_address_state", _) => ShippingAddressState
+  | ("user_crypto_currency_network", _) => CryptoCurrencyNetworks
+  | ("user_date_of_birth", _) => DateOfBirth
+  | ("user_phone_number_country_code", _) => PhoneCountryCode
   | _ => None
   }
 }
@@ -614,6 +635,8 @@ let dynamicFieldsEnabledPaymentMethods = [
   "pix_transfer",
   "giropay",
   "local_bank_transfer_transfer",
+  "afterpay_clearpay",
+  "mifinity",
 ]
 
 let getIsBillingField = requiredFieldType => {
@@ -695,8 +718,6 @@ type paymentMethod =
   Cards | Wallets | PayLater | BankRedirect | BankTransfer | BankDebit | Crypto | Voucher | NONE
 
 type cardType = Credit | Debit
-type paymentMethodType =
-  Card(cardType) | Klarna | Affirm | AfterPay | Gpay | Paypal | ApplePay | CryptoCurrency | NONE
 
 type paymentExperience = {
   payment_experience_type: paymentFlow,
@@ -729,6 +750,11 @@ type paymentMethodTypes = {
 type methods = {
   payment_method: string,
   payment_method_types: array<paymentMethodTypes>,
+}
+
+let defaultMethods = {
+  payment_method: "card",
+  payment_method_types: [],
 }
 
 type mandateType = {
@@ -786,19 +812,6 @@ let getMethod = str => {
   }
 }
 
-let getPaymentMethodType = str => {
-  switch str {
-  | "afterpay_clearpay" => AfterPay
-  | "klarna" => Klarna
-  | "affirm" => Affirm
-  | "apple_pay" => ApplePay
-  | "google_pay" => Gpay
-  | "credit" => Card(Credit)
-  | "debit" => Card(Debit)
-  | "crypto_currency" => CryptoCurrency
-  | _ => NONE
-  }
-}
 let getPaymentExperienceType = str => {
   switch str {
   | "redirect_to_url" => RedirectToURL
@@ -1038,10 +1051,7 @@ let getPaymentMethodTypeFromList = (
     ->Array.find(item => {
       item.payment_method == paymentMethod
     })
-    ->Option.getOr({
-      payment_method: "card",
-      payment_method_types: [],
-    })
+    ->Option.getOr(defaultMethods)
   ).payment_method_types->Array.find(item => {
     item.payment_method_type == paymentMethodType
   })
@@ -1054,39 +1064,23 @@ let getCardNetwork = (~paymentMethodType, ~cardBrand) => {
   ->Option.getOr(defaultCardNetworks)
 }
 
-let paymentMethodFieldToStrMapper = (field: paymentMethodsFields) => {
-  switch field {
-  | Email => "Email"
-  | FullName => "FullName"
-  | InfoElement => "InfoElement"
-  | Country => "Country"
-  | Bank => "Bank"
-  | SpecialField(_) => "SpecialField"
-  | None => "None"
-  | BillingName => "BillingName"
-  | PhoneNumber => "PhoneNumber"
-  | AddressLine1 => "AddressLine1"
-  | AddressLine2 => "AddressLine2"
-  | AddressCity => "AddressCity"
-  | StateAndCity => "StateAndCity"
-  | CountryAndPincode(_) => "CountryAndPincode"
-  | AddressPincode => "AddressPincode"
-  | AddressState => "AddressState"
-  | AddressCountry(_) => "AddressCountry"
-  | BlikCode => "BlikCode"
-  | Currency(_) => "Currency"
-  | CardNumber => "CardNumber"
-  | CardExpiryMonth => "CardExpiryMonth"
-  | CardExpiryYear => "CardExpiryYear"
-  | CardExpiryMonthAndYear => "CardExpiryMonthAndYear"
-  | CardCvc => "CardCvc"
-  | CardExpiryAndCvc => "CardExpiryAndCvc"
-  | ShippingName => "ShippingName"
-  | ShippingAddressLine1 => "ShippingAddressLine1"
-  | ShippingAddressLine2 => "ShippingAddressLine2"
-  | ShippingAddressCity => "ShippingAddressCity"
-  | ShippingAddressPincode => "ShippingAddressPincode"
-  | ShippingAddressState => "ShippingAddressState"
-  | ShippingAddressCountry(_) => "ShippingAddressCountry"
-  }
+let getPaymentExperienceTypeFromPML = (
+  ~paymentMethodList: paymentMethodList,
+  ~paymentMethodName,
+  ~paymentMethodType,
+) => {
+  paymentMethodList.payment_methods
+  ->Array.filter(paymentMethod => paymentMethod.payment_method === paymentMethodName)
+  ->Array.get(0)
+  ->Option.flatMap(method =>
+    method.payment_method_types
+    ->Array.filter(methodTypes => methodTypes.payment_method_type === paymentMethodType)
+    ->Array.get(0)
+  )
+  ->Option.flatMap(paymentMethodTypes =>
+    paymentMethodTypes.payment_experience
+    ->Array.map(paymentExperience => paymentExperience.payment_experience_type)
+    ->Some
+  )
+  ->Option.getOr([])
 }

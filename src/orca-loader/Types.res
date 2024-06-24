@@ -10,7 +10,7 @@ type eventData = {
   confirmTriggered: bool,
   oneClickConfirmTriggered: bool,
 }
-type event = {key: string, data: eventData}
+type event = {key: string, data: eventData, source: Dom.element}
 type eventParam = Event(event) | EventData(eventData) | Empty
 type eventHandler = option<JSON.t> => unit
 @send external onload: (Dom.element, unit => Promise.t<'a>) => Promise.t<'a> = "onload"
@@ -41,7 +41,9 @@ type element = {
 
 type getCustomerSavedPaymentMethods = {
   getCustomerDefaultSavedPaymentMethodData: unit => JSON.t,
+  getCustomerLastUsedPaymentMethodData: unit => JSON.t,
   confirmWithCustomerDefaultPaymentMethod: JSON.t => Promise.t<JSON.t>,
+  confirmWithLastUsedPaymentMethod: JSON.t => Promise.t<JSON.t>,
 }
 
 type initPaymentSession = {getCustomerSavedPaymentMethods: unit => Promise.t<JSON.t>}
@@ -122,7 +124,15 @@ let getCustomerDefaultSavedPaymentMethodData = () => {
   JSON.Encode.null
 }
 
+let getCustomerLastUsedPaymentMethodData = () => {
+  JSON.Encode.null
+}
+
 let confirmWithCustomerDefaultPaymentMethod = _confirmParams => {
+  Promise.resolve(Dict.make()->JSON.Encode.object)
+}
+
+let confirmWithLastUsedPaymentMethod = _confirmParams => {
   Promise.resolve(Dict.make()->JSON.Encode.object)
 }
 

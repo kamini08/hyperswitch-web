@@ -12,10 +12,12 @@ let make = (
 ) => {
   let {iframeId} = Recoil.useRecoilValueFromAtom(keys)
   let options = Recoil.useRecoilValueFromAtom(elementOptions)
+  let {localeString} = Recoil.useRecoilValueFromAtom(configAtom)
 
   let (
     isCardValid,
     setIsCardValid,
+    _,
     cardNumber,
     changeCardNumber,
     handleCardBlur,
@@ -148,7 +150,7 @@ let make = (
             paymentType
             maxLength=7
             inputRef=expiryRef
-            placeholder="MM / YY"
+            placeholder=localeString.expiryPlaceholder
             isFocus
           />
         </div>

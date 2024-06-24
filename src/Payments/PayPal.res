@@ -24,7 +24,7 @@ let make = () => {
   | Paypal(val) => val->PaypalSDKTypes.getLabel
   | _ => Paypal->PaypalSDKTypes.getLabel
   }
-  let (_, _, heightType) = options.wallets.style.height
+  let (_, _, heightType, _) = options.wallets.style.height
   let height = switch heightType {
   | Paypal(val) => val
   | _ => 48
@@ -86,8 +86,8 @@ let make = () => {
     style={
       display: "inline-block",
       color: textColor,
-      height: `${height->Belt.Int.toString}px`,
-      borderRadius: "2px",
+      height: `${height->Int.toString}px`,
+      borderRadius: `${options.wallets.style.buttonRadius->Int.toString}px`,
       width: "100%",
       backgroundColor: buttonColor,
     }

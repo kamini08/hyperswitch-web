@@ -25,9 +25,11 @@ let make = () => {
     let json = event.data->Identity.anyTypeToJson->getStringFromJson("")->safeParse
     let dict = json->getDictFromJson
     switch dict->Dict.get("submitSuccessful") {
-    | Some(_) =>
-      setIsPayNowButtonDisable(_ => false)
-      setShowLoader(_ => false)
+    | Some(submitSuccessfulVal) =>
+      if !(submitSuccessfulVal->JSON.Decode.bool->Option.getOr(false)) {
+        setIsPayNowButtonDisable(_ => false)
+        setShowLoader(_ => false)
+      }
     | None => ()
     }
   }
@@ -51,7 +53,7 @@ let make = () => {
         cursor: {isPayNowButtonDisable ? "not-allowed" : "pointer"},
         opacity: {isPayNowButtonDisable ? "0.6" : "1"},
         width: themeObj.buttonWidth,
-        borderColor: themeObj.buttonBorderColor,
+        border: `${themeObj.buttonBorderWidth} solid ${themeObj.buttonBorderColor}`,
       }>
       <span
         id="button-text"

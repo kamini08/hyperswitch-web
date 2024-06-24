@@ -89,7 +89,7 @@ let make = (
     "postal_code",
     logger,
   )
-  let (postalCodes, setPostalCodes) = React.useState(_ => [PostalCodeType.defaultPostalCode])
+
   let (currency, setCurrency) = Recoil.useLoggedRecoilState(userCurrency, "currency", logger)
   let line1Ref = React.useRef(Nullable.null)
   let line2Ref = React.useRef(Nullable.null)
@@ -101,6 +101,7 @@ let make = (
   let defaultCardProps = (
     None,
     _ => (),
+    None,
     "",
     _ => (),
     _ => (),
@@ -154,6 +155,7 @@ let make = (
   let (
     isCardValid,
     setIsCardValid,
+    _,
     cardNumber,
     changeCardNumber,
     handleCardBlur,
@@ -213,17 +215,6 @@ let make = (
 
   React.useEffect0(() => {
     open Promise
-    // Dynamically import/download Postal codes and states JSON
-    PostalCodeType.importPostalCode("./../PostalCodes.bs.js")
-    ->then(res => {
-      setPostalCodes(_ => res.default)
-      resolve()
-    })
-    ->catch(_ => {
-      setPostalCodes(_ => [PostalCodeType.defaultPostalCode])
-      resolve()
-    })
-    ->ignore
     AddressPaymentInput.importStates("./../States.json")
     ->then(res => {
       setStatesJson(_ => Some(res.states))
@@ -237,8 +228,6 @@ let make = (
 
     None
   })
-
-  let _regex = CardUtils.postalRegex(postalCodes, ~country={getCountryCode(country).isoAlpha2}, ())
 
   let onPostalChange = ev => {
     let val = ReactEvent.Form.target(ev)["value"]
@@ -337,7 +326,6 @@ let make = (
           key={`outside-billing-${index->Int.toString}`}
           className="flex flex-col w-full place-content-between"
           style={
-            marginTop: index !== 0 || paymentMethod === "card" ? themeObj.spacingGridColumn : "",
             gridColumnGap: themeObj.spacingGridRow,
           }>
           {switch item {
@@ -374,7 +362,7 @@ let make = (
               appearance=config.appearance
               maxLength=7
               inputRef=expiryRef
-              placeholder="MM / YY"
+              placeholder=localeString.expiryPlaceholder
             />
           | CardCvc =>
             <PaymentInputField
@@ -414,7 +402,7 @@ let make = (
                 appearance=config.appearance
                 maxLength=7
                 inputRef=expiryRef
-                placeholder="MM / YY"
+                placeholder=localeString.expiryPlaceholder
               />
               <PaymentInputField
                 fieldName=localeString.cvcTextLabel
@@ -468,6 +456,8 @@ let make = (
                 optionalRequiredFields={Some(requiredFields)}
               />
             </>
+          | CryptoCurrencyNetworks => <CryptoCurrencyNetworks />
+          | DateOfBirth => <DateOfBirth />
           | Email
           | InfoElement
           | Country
@@ -491,6 +481,7 @@ let make = (
           | ShippingAddressCity
           | ShippingAddressPincode
           | ShippingAddressState
+          | PhoneCountryCode
           | ShippingAddressCountry(_) => React.null
           }}
         </div>
@@ -771,6 +762,9 @@ let make = (
                 | ShippingAddressPincode
                 | ShippingAddressState
                 | ShippingAddressCountry(_)
+                | CryptoCurrencyNetworks
+                | DateOfBirth
+                | PhoneCountryCode
                 | None => React.null
                 }}
               </div>

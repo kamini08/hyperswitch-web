@@ -9,6 +9,7 @@ let cardsToRender = (width: int) => {
 }
 @react.component
 let make = (~cardProps, ~expiryProps, ~cvcProps, ~paymentType: CardThemeType.mode) => {
+  let divRef = React.useRef(Nullable.null)
   let sessionsObj = Recoil.useRecoilValueFromAtom(sessions)
   let {
     showCardFormByDefault,
@@ -25,7 +26,9 @@ let make = (~cardProps, ~expiryProps, ~cvcProps, ~paymentType: CardThemeType.mod
   let (walletOptions, setWalletOptions) = React.useState(_ => [])
   let {sdkHandleConfirmPayment} = Recoil.useRecoilValueFromAtom(optionAtom)
 
-  let setPaymentMethodListValue = Recoil.useSetRecoilState(PaymentUtils.paymentMethodListValue)
+  let (paymentMethodListValue, setPaymentMethodListValue) = Recoil.useRecoilState(
+    PaymentUtils.paymentMethodListValue,
+  )
   let (cardsContainerWidth, setCardsContainerWidth) = React.useState(_ => 0)
   let layoutClass = CardUtils.getLayoutClass(layout)
   let (selectedOption, setSelectedOption) = Recoil.useRecoilState(selectedOptionAtom)
@@ -50,18 +53,26 @@ let make = (~cardProps, ~expiryProps, ~cvcProps, ~paymentType: CardThemeType.mod
       }
     | (_, LoadingSavedCards) => ()
     | (_, LoadedSavedCards(savedPaymentMethods, isGuestCustomer)) => {
-        let defaultPaymentMethod =
-          savedPaymentMethods->Array.find(savedCard => savedCard.defaultPaymentMethodSet)
-
-        let savedCardsWithoutDefaultPaymentMethod = savedPaymentMethods->Array.filter(savedCard => {
-          !savedCard.defaultPaymentMethodSet
-        })
-
-        let finalSavedPaymentMethods = switch defaultPaymentMethod {
-        | Some(defaultPaymentMethod) =>
-          [defaultPaymentMethod]->Array.concat(savedCardsWithoutDefaultPaymentMethod)
-        | None => savedCardsWithoutDefaultPaymentMethod
+        let sortSavedPaymentMethods = (a, b) => {
+          let defaultCompareVal = compareLogic(
+            Date.fromString(a.lastUsedAt),
+            Date.fromString(b.lastUsedAt),
+          )
+          if optionAtomValue.displayDefaultSavedPaymentIcon {
+            if a.defaultPaymentMethodSet {
+              -1.
+            } else if b.defaultPaymentMethodSet {
+              1.
+            } else {
+              defaultCompareVal
+            }
+          } else {
+            defaultCompareVal
+          }
         }
+
+        let finalSavedPaymentMethods = savedPaymentMethods->Array.copy
+        finalSavedPaymentMethods->Array.sort(sortSavedPaymentMethods)
 
         setSavedMethods(_ => finalSavedPaymentMethods)
         setLoadSavedCards(_ =>
@@ -81,19 +92,24 @@ let make = (~cardProps, ~expiryProps, ~cvcProps, ~paymentType: CardThemeType.mod
   }, (customerPaymentMethods, displaySavedPaymentMethods))
 
   React.useEffect(() => {
-    let defaultPaymentMethod =
-      savedMethods->Array.find(savedMethod => savedMethod.defaultPaymentMethodSet)
+    let defaultSelectedPaymentMethod = optionAtomValue.displayDefaultSavedPaymentIcon
+      ? savedMethods->Array.find(savedMethod => savedMethod.defaultPaymentMethodSet)
+      : savedMethods->Array.get(0)
 
     let isSavedMethodsEmpty = savedMethods->Array.length === 0
 
-    let tokenObj = switch (isSavedMethodsEmpty, defaultPaymentMethod) {
-    | (false, Some(defaultPaymentMethod)) => Some(defaultPaymentMethod)
+    let tokenObj = switch (isSavedMethodsEmpty, defaultSelectedPaymentMethod) {
+    | (false, Some(defaultSelectedPaymentMethod)) => Some(defaultSelectedPaymentMethod)
     | (false, None) => Some(savedMethods->Array.get(0)->Option.getOr(defaultCustomerMethods))
     | _ => None
     }
 
     switch tokenObj {
-    | Some(obj) => setPaymentToken(_ => (obj.paymentToken, obj.customerId))
+    | Some(obj) =>
+      setPaymentToken(_ => {
+        paymentToken: obj.paymentToken,
+        customerId: obj.customerId,
+      })
     | None => ()
     }
     None
@@ -102,6 +118,7 @@ let make = (~cardProps, ~expiryProps, ~cvcProps, ~paymentType: CardThemeType.mod
   let (walletList, paymentOptionsList, actualList) = PaymentUtils.useGetPaymentMethodList(
     ~paymentOptions,
     ~paymentType,
+    ~sessions,
   )
 
   React.useEffect(() => {
@@ -221,9 +238,6 @@ let make = (~cardProps, ~expiryProps, ~cvcProps, ~paymentType: CardThemeType.mod
   let checkRenderOrComp = () => {
     walletOptions->Array.includes("paypal") || isShowOrPayUsing
   }
-  let dict = sessions->getDictFromJson
-  let sessionObj = SessionsType.itemToObjMapper(dict, Others)
-  let klarnaTokenObj = SessionsType.getPaymentSessionObj(sessionObj.sessionsToken, Klarna)
 
   let loader = () => {
     handlePostMessageEvents(
@@ -239,25 +253,9 @@ let make = (~cardProps, ~expiryProps, ~cvcProps, ~paymentType: CardThemeType.mod
       {switch selectedOption->PaymentModeType.paymentMode {
       | Card => <CardPayment cardProps expiryProps cvcProps paymentType />
       | Klarna =>
-        <SessionPaymentWrapper type_=Others>
-          {switch klarnaTokenObj {
-          | OtherTokenOptional(optToken) =>
-            switch optToken {
-            | Some(token) =>
-              <React.Suspense fallback={loader()}>
-                <KlarnaSDKLazy sessionObj=token />
-              </React.Suspense>
-            | None =>
-              <React.Suspense fallback={loader()}>
-                <KlarnaPaymentLazy paymentType />
-              </React.Suspense>
-            }
-          | _ =>
-            <React.Suspense fallback={loader()}>
-              <KlarnaPaymentLazy paymentType />
-            </React.Suspense>
-          }}
-        </SessionPaymentWrapper>
+        <React.Suspense fallback={loader()}>
+          <KlarnaPaymentLazy paymentType />
+        </React.Suspense>
       | ACHTransfer =>
         <React.Suspense fallback={loader()}>
           <ACHBankTransferLazy paymentType />
@@ -378,9 +376,15 @@ let make = (~cardProps, ~expiryProps, ~cvcProps, ~paymentType: CardThemeType.mod
       </div>
     </RenderIf>
     {switch paymentMethodList {
-    | LoadError(_) => React.null
+    | LoadError(_) =>
+      <RenderIf condition={paymentMethodListValue.payment_methods->Array.length === 0}>
+        <ErrorBoundary.ErrorTextAndImage divRef level={Top} />
+      </RenderIf>
     | _ =>
-      <RenderIf condition={paymentOptions->Array.length == 0 && walletOptions->Array.length == 0}>
+      <RenderIf
+        condition={!displaySavedPaymentMethods &&
+        paymentOptions->Array.length == 0 &&
+        walletOptions->Array.length == 0}>
         <PaymentElementShimmer />
       </RenderIf>
     }}

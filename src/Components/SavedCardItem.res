@@ -11,7 +11,9 @@ let make = (
   ~setRequiredFieldsBody,
 ) => {
   let {themeObj, config, localeString} = Recoil.useRecoilValueFromAtom(RecoilAtoms.configAtom)
-  let {hideExpiredPaymentMethods} = Recoil.useRecoilValueFromAtom(RecoilAtoms.optionAtom)
+  let {hideExpiredPaymentMethods, displayDefaultSavedPaymentIcon} = Recoil.useRecoilValueFromAtom(
+    RecoilAtoms.optionAtom,
+  )
   let (cardBrand, setCardBrand) = Recoil.useRecoilState(RecoilAtoms.cardBrand)
   let (
     isCVCValid,
@@ -80,7 +82,13 @@ let make = (
         boxShadow: "none",
         opacity: {isCardExpired ? "0.7" : "1"},
       }
-      onClick={_ => setPaymentToken(_ => (paymentItem.paymentToken, paymentItem.customerId))}>
+      onClick={_ => {
+        open RecoilAtomTypes
+        setPaymentToken(_ => {
+          paymentToken: paymentItem.paymentToken,
+          customerId: paymentItem.customerId,
+        })
+      }}>
       <div className="w-full">
         <div>
           <div className="flex flex-row justify-between items-center">
@@ -110,7 +118,9 @@ let make = (
                         </div>
                       </div>
                     : <div> {React.string(paymentMethodType->Utils.snakeToTitleCase)} </div>}
-                  <RenderIf condition={paymentItem.defaultPaymentMethodSet}>
+                  <RenderIf
+                    condition={displayDefaultSavedPaymentIcon &&
+                    paymentItem.defaultPaymentMethodSet}>
                     <Icon size=18 name="checkmark" style={color: themeObj.colorPrimary} />
                   </RenderIf>
                 </div>

@@ -2,6 +2,8 @@ open Utils
 open Promise
 @react.component
 let make = (~sessionObj: option<JSON.t>) => {
+  let url = RescriptReactRouter.useUrl()
+  let componentName = CardUtils.getQueryParamsDictforKey(url.search, "componentName")
   let loggerState = Recoil.useRecoilValueFromAtom(RecoilAtoms.loggerAtom)
   let {publishableKey, sdkHandleOneClickConfirmPayment} = Recoil.useRecoilValueFromAtom(
     RecoilAtoms.keys,
@@ -81,7 +83,7 @@ let make = (~sessionObj: option<JSON.t>) => {
 
   let buttonColor = switch options.wallets.style.theme {
   | Outline
-  | Light => "white"
+  | Light => "white-outline"
   | Dark => "black"
   }
 
@@ -146,7 +148,7 @@ let make = (~sessionObj: option<JSON.t>) => {
         height: 3rem;
         display: flex;
         cursor: pointer;
-        border-radius: 2px;
+        border-radius: ${options.wallets.style.buttonRadius->Int.toString}px;
     }
     .apple-pay-button-white-with-text {
         -apple-pay-button-style: white;
@@ -164,7 +166,7 @@ let make = (~sessionObj: option<JSON.t>) => {
           display: inline-flex;
           justify-content: center;
           font-size: 12px;
-          border-radius: 5px;
+          border-radius: ${options.wallets.style.buttonRadius->Int.toString}px;
           padding: 0px;
           box-sizing: border-box;
           min-width: 200px;
@@ -242,7 +244,14 @@ let make = (~sessionObj: option<JSON.t>) => {
             let bodyDict = PaymentBody.applePayThirdPartySdkBody(~connectors)
             processPayment(bodyDict, ~isThirdPartyFlow=true, ())
           } else {
-            let message = [("applePayButtonClicked", true->JSON.Encode.bool)]
+            let paymentRequest = ApplePayTypes.getPaymentRequestFromSession(
+              ~sessionObj,
+              ~componentName,
+            )
+            let message = [
+              ("applePayButtonClicked", true->JSON.Encode.bool),
+              ("applePayPaymentRequest", paymentRequest),
+            ]
             handlePostMessage(message)
           }
         } else {
@@ -279,12 +288,12 @@ let make = (~sessionObj: option<JSON.t>) => {
 
           let billingContact =
             dict
-            ->getDictfromDict("applePayBillingContact")
+            ->getDictFromDict("applePayBillingContact")
             ->ApplePayTypes.billingContactItemToObjMapper
 
           let shippingContact =
             dict
-            ->getDictfromDict("applePayShippingContact")
+            ->getDictFromDict("applePayShippingContact")
             ->ApplePayTypes.shippingContactItemToObjMapper
 
           let requiredFieldsBody = DynamicFieldsUtils.getApplePayRequiredFields(
@@ -337,9 +346,9 @@ let make = (~sessionObj: option<JSON.t>) => {
     None
   }, (isApplePayReady, isInvokeSDKFlow, paymentExperience))
 
-  <div>
-    <style> {React.string(css)} </style>
-    <RenderIf condition={showApplePay}>
+  <RenderIf condition={showApplePay}>
+    <div>
+      <style> {React.string(css)} </style>
       {if showApplePayLoader {
         <div className="apple-pay-loader-div">
           <div className="apple-pay-loader" />
@@ -353,8 +362,8 @@ let make = (~sessionObj: option<JSON.t>) => {
           <span className="logo" />
         </button>
       }}
-    </RenderIf>
-  </div>
+    </div>
+  </RenderIf>
 }
 
 let default = make

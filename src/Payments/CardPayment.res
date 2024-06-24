@@ -25,6 +25,7 @@ let make = (
   let (
     isCardValid,
     setIsCardValid,
+    isCardSupported,
     cardNumber,
     changeCardNumber,
     handleCardBlur,
@@ -77,10 +78,7 @@ let make = (
     let cardPaymentMethod =
       paymentMethodListValue.payment_methods
       ->Array.find(ele => ele.payment_method === "card")
-      ->Option.getOr({
-        payment_method: "card",
-        payment_method_types: [],
-      })
+      ->Option.getOr(PaymentMethodsRecord.defaultMethods)
 
     let cardNetworks = cardPaymentMethod.payment_method_types->Array.map(ele => ele.card_networks)
 
@@ -99,7 +97,14 @@ let make = (
 
   let areRequiredFieldsValid = Recoil.useRecoilValueFromAtom(RecoilAtoms.areRequiredFieldsValid)
 
-  let complete = isAllValid(isCardValid, isCVCValid, isExpiryValid, true, "payment")
+  let complete = isAllValid(
+    isCardValid,
+    isCardSupported,
+    isCVCValid,
+    isExpiryValid,
+    true,
+    "payment",
+  )
   let empty = cardNumber == "" || cardExpiry == "" || cvcNumber == ""
   React.useEffect(() => {
     setComplete(_ => complete)
@@ -152,8 +157,13 @@ let make = (
       defaultCardBody
     }
     if confirm.doSubmit {
-      let validFormat = (isBancontact || complete) && areRequiredFieldsValid
-      if validFormat && (showFields || isBancontact) && isCardBrandValid {
+      let validFormat =
+        (isBancontact ||
+        (isCVCValid->Option.getOr(false) &&
+        isCardValid->Option.getOr(false) &&
+        isCardSupported->Option.getOr(false) &&
+        isExpiryValid->Option.getOr(false))) && areRequiredFieldsValid
+      if validFormat && (showFields || isBancontact) {
         intent(
           ~bodyArr={
             (isBancontact ? banContactBody : cardBody)
@@ -179,11 +189,12 @@ let make = (
           setCvcError(_ => localeString.cvcNumberEmptyText)
           setUserError(localeString.enterFieldsText)
         }
+        if isCardSupported->Option.getOr(true)->not {
+          setCardError(_ => localeString.cardBrandConfiguredErrorText(cardBrand))
+          setUserError(localeString.cardBrandConfiguredErrorText(cardBrand))
+        }
         if !validFormat {
           setUserError(localeString.enterValidDetailsText)
-        }
-        if !isCardBrandValid {
-          setUserError(localeString.cardBrandConfiguredErrorText(cardBrand))
         }
       }
     }
@@ -215,7 +226,7 @@ let make = (
   <div className="animate-slowShow">
     <RenderIf condition={showFields || isBancontact}>
       <div className="flex flex-col" style={gridGap: themeObj.spacingGridColumn}>
-        <div className="w-full">
+        <div className="flex flex-col w-full" style={gridGap: themeObj.spacingGridColumn}>
           <RenderIf condition={innerLayout === Compressed}>
             <div
               style={
@@ -249,9 +260,6 @@ let make = (
             <div
               className="flex flex-row w-full place-content-between"
               style={
-                marginTop: {
-                  innerLayout === Spaced ? themeObj.spacingGridColumn : ""
-                },
                 gridColumnGap: {innerLayout === Spaced ? themeObj.spacingGridRow : ""},
               }>
               <div className={innerLayout === Spaced ? "w-[45%]" : "w-[50%]"}>
@@ -268,7 +276,7 @@ let make = (
                   appearance=config.appearance
                   maxLength=7
                   inputRef=expiryRef
-                  placeholder="MM / YY"
+                  placeholder=localeString.expiryPlaceholder
                 />
               </div>
               <div className={innerLayout === Spaced ? "w-[45%]" : "w-[50%]"}>
@@ -330,7 +338,7 @@ let make = (
               />
             </div>
           </RenderIf>
-          <RenderIf condition={isCustomerAcceptanceRequired}>
+          <RenderIf condition={!options.hideCardNicknameField && isCustomerAcceptanceRequired}>
             <div className={`pb-2 ${nicknameFieldClassName}`}>
               <NicknamePaymentInput paymentType value=nickname setValue=setNickname />
             </div>
@@ -341,7 +349,7 @@ let make = (
     <RenderIf condition={showFields || isBancontact}>
       <Surcharge paymentMethod paymentMethodType cardBrand={cardBrand->CardUtils.getCardType} />
     </RenderIf>
-    <RenderIf condition={!isBancontact}>
+    <RenderIf condition={displaySavedPaymentMethodsCheckbox && !isBancontact}>
       {switch (
         paymentMethodListValue.mandate_payment,
         options.terms.card,

@@ -82,4 +82,7 @@ let localeStrings: LocaleStringTypes.localeStrings = {
   cardExpiredText: `انتهت صلاحية هذه البطاقة`,
   cardHeader: `معلومات البطاقة`,
   cardBrandConfiguredErrorText: str => `${str} غير مدعوم في الوقت الحالي.`,
+  currencyNetwork: `شبكات العملات`,
+  expiryPlaceholder: `MM / YY`,
+  dateOfBirth: `تاريخ الميلاد`,
 }

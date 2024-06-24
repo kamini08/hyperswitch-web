@@ -1,3 +1,4 @@
+/* eslint-disable no-undef */
 import { useEffect, useState } from "react";
 import React from "react";
 import { HyperElements } from "@juspay-tech/react-hyper-js";
@@ -10,26 +11,42 @@ function Payment() {
   const [pubKey, setPublishable] = useState("");
 
   useEffect(() => {
-    Promise.all([
-      fetch(`${endPoint}/config`),
-      fetch(`${endPoint}/urls`),
-      fetch(`${endPoint}/create-payment-intent`),
-    ])
-      .then((responses) => {
-        return Promise.all(responses.map((response) => response.json()));
-      })
-      .then((dataArray) => {
-        const { publishableKey } = dataArray[0];
-        setPublishable(publishableKey);
-        const { serverUrl, clientUrl } = dataArray[1];
-        const { clientSecret } = dataArray[2];
+    const fetchData = async () => {
+      try {
+        const url = SELF_SERVER_URL === "" ? ENDPOINT : SELF_SERVER_URL;
+
+        const [configResponse, urlsResponse, paymentIntentResponse] =
+          await Promise.all([
+            fetch(`${url}/config`),
+            fetch(`${url}/urls`),
+            fetch(`${url}/create-payment-intent`),
+          ]);
+
+        if (
+          !configResponse.ok ||
+          !urlsResponse.ok ||
+          !paymentIntentResponse.ok
+        ) {
+          throw new Error("Network response was not ok");
+        }
+
+        const [configData, urlsData, paymentIntentData] = await Promise.all([
+          configResponse.json(),
+          urlsResponse.json(),
+          paymentIntentResponse.json(),
+        ]);
+
+        const { publishableKey } = configData;
+        const { serverUrl, clientUrl } = urlsData;
+        const { clientSecret } = paymentIntentData;
         setClientSecret(clientSecret);
+        setPublishable(publishableKey);
         const script = document.createElement("script");
         script.src = `${clientUrl}/HyperLoader.js`;
         document.head.appendChild(script);
         script.onload = () => {
           setHyperPromise(
-            new Promise((resolve, _) => {
+            new Promise((resolve) => {
               resolve(
                 window.Hyper(publishableKey, {
                   customBackendUrl: serverUrl,
@@ -46,7 +63,16 @@ function Payment() {
             })
           );
         };
-      });
+
+        return () => {
+          document.head.removeChild(script);
+        };
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      }
+    };
+
+    fetchData();
   }, []);
 
   useEffect(() => {
@@ -54,7 +80,7 @@ function Payment() {
   }, [pubKey, clientSecret]);
 
   return (
-    <div className="mainConatiner">
+    <div className="mainContainer">
       <div className="heading">
         <h2>Hyperswitch Unified Checkout</h2>
       </div>
