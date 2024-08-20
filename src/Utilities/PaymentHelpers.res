@@ -1226,18 +1226,12 @@ let fetchSessions = (
   open Promise
   let headers = [
     ("Content-Type", "application/json"),
-    ("api-key", publishableKey),
+    ("api-key", "dev_bGAJOts29LpsidLNfBP5ei2H3rVY6ZOA8WfLnOK0wzlNihToUZZL6hX1Aezwcvdo"),
     ("X-Merchant-Domain", merchantHostname),
   ]
   let paymentIntentID = clientSecret->getPaymentId
-  let body =
-    [
-      ("payment_id", paymentIntentID->JSON.Encode.string),
-      ("client_secret", clientSecret->JSON.Encode.string),
-      ("wallets", wallets->JSON.Encode.array),
-      ("delayed_session_token", isDelayedSessionToken->JSON.Encode.bool),
-    ]->getJsonFromArrayOfJson
-  let uri = `${endpoint}/payments/session_tokens`
+  let body = []->getJsonFromArrayOfJson
+  let uri = `${endpoint}/payments/session_tokens_v2`
   logApi(
     ~optLogger,
     ~url=uri,
@@ -1446,7 +1440,7 @@ let createPaymentMethod = (
   })
 }
 
-let fetchPaymentMethodList = (
+let _fetchPaymentMethodList = (
   ~clientSecret,
   ~publishableKey,
   ~logger,
@@ -1510,6 +1504,97 @@ let fetchPaymentMethodList = (
     JSON.Encode.null->resolve
   })
 }
+let fetchPaymentMethodList = (
+  ~clientSecret,
+  ~publishableKey,
+  ~logger,
+  ~switchToCustomPod,
+  ~endpoint,
+) => {
+  open Promise
+  let headers = [
+    ("Content-Type", "application/json"),
+    ("api-key", "dev_bGAJOts29LpsidLNfBP5ei2H3rVY6ZOA8WfLnOK0wzlNihToUZZL6hX1Aezwcvdo"),
+  ]
+  let uri = `${endpoint}/account/payment_methods_v2`
+  logApi(
+    ~optLogger=Some(logger),
+    ~url=uri,
+    ~apiLogType=Request,
+    ~eventName=PAYMENT_METHODS_CALL_INIT,
+    ~logType=INFO,
+    ~logCategory=API,
+  )
+  let bodyStr =
+    [
+      // ("accepted_countries", ["US"]->Array.map(JSON.Encode.string)->JSON.Encode.array),
+      // ("accepted_currencies", ["USD"]->Array.map(JSON.Encode.string)->JSON.Encode.array),
+      // ("amount", "2999"->JSON.Encode.string),
+      // ("recurring_enabled", false->JSON.Encode.bool),
+      // ("installment_payment_enabled", false->JSON.Encode.bool),
+      // ("card_networks", cardNetworks->Option.getOr([])->JSON.Encode.array(JSON.Encode.string)),
+      // ("limit", limit->Option.getOr(0)->JSON.Encode.int),
+      // ("customer_id", customerId->Option.getOr("")->JSON.Encode.string),
+      // ("mandate_id", mandateId->Option.getOr("")->JSON.Encode.string),
+      // ("request_external_three_ds_authentication", false->JSON.Encode.bool),
+      // ("currency", "USD"->JSON.Encode.string),
+      // ("business_country", "US"->JSON.Encode.string),
+      // ("business_label", businessLabel->Option.getOr("")->JSON.Encode.string),
+      // ("profile_id", profileId->Option.getOr("")->JSON.Encode.string),
+    ]
+    ->getJsonFromArrayOfJson
+    ->JSON.stringify
+  fetchApi(
+    uri,
+    ~method=#GET,
+    ~headers=headers->ApiEndpoint.addCustomPodHeader(~switchToCustomPod),
+    ~bodyStr,
+  )
+  ->then(resp => {
+    let statusCode = resp->Fetch.Response.status->Int.toString
+    if statusCode->String.charAt(0) !== "2" {
+      resp
+      ->Fetch.Response.json
+      ->then(data => {
+        logApi(
+          ~optLogger=Some(logger),
+          ~url=uri,
+          ~data,
+          ~statusCode,
+          ~apiLogType=Err,
+          ~eventName=PAYMENT_METHODS_CALL,
+          ~logType=ERROR,
+          ~logCategory=API,
+        )
+        JSON.Encode.null->resolve
+      })
+    } else {
+      logApi(
+        ~optLogger=Some(logger),
+        ~url=uri,
+        ~statusCode,
+        ~apiLogType=Response,
+        ~eventName=PAYMENT_METHODS_CALL,
+        ~logType=INFO,
+        ~logCategory=API,
+      )
+      Fetch.Response.json(resp)
+    }
+  })
+  ->catch(err => {
+    let exceptionMessage = err->formatException
+    logApi(
+      ~optLogger=Some(logger),
+      ~url=uri,
+      ~apiLogType=NoResponse,
+      ~eventName=PAYMENT_METHODS_CALL,
+      ~logType=ERROR,
+      ~logCategory=API,
+      ~data=exceptionMessage,
+    )
+    JSON.Encode.null->resolve
+  })
+}
 
 let fetchCustomerPaymentMethodList = (
   ~clientSecret,
@@ -1520,8 +1605,11 @@ let fetchCustomerPaymentMethodList = (
   ~isPaymentSession=false,
 ) => {
   open Promise
-  let headers = [("Content-Type", "application/json"), ("api-key", publishableKey)]
-  let uri = `${endpoint}/customers/payment_methods?client_secret=${clientSecret}`
+  let headers = [
+    ("Content-Type", "application/json"),
+    ("api-key", "dev_bGAJOts29LpsidLNfBP5ei2H3rVY6ZOA8WfLnOK0wzlNihToUZZL6hX1Aezwcvdo"),
+  ]
+  let uri = `${endpoint}/customers/payment_methods_v2`
   logApi(
     ~optLogger,
     ~url=uri,
