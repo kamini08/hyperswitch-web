@@ -26,6 +26,7 @@ type style
 external querySelector: string => Nullable.t<Dom.element> = "querySelector"
 @val @scope("document")
 external querySelectorAll: string => array<Dom.element> = "querySelectorAll"
+@set external setSdkEnvironment: (window, string) => unit = "sdkEnvironment"
 
 type eventData = {
   elementType: string,

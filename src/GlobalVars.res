@@ -10,7 +10,10 @@
 @val external enableLogging: bool = "enableLogging"
 @val external loggingLevelStr: string = "loggingLevel"
 @val external maxLogsPushedPerEventName: int = "maxLogsPushedPerEventName"
+@val external sdkEnvironment: string = "sdkEnv"
+
 let targetOrigin: string = "*"
-let isInteg = sdkUrl === "https://dev.hyperswitch.io"
-let isSandbox = sdkUrl === "https://beta.hyperswitch.io" || sdkUrl === "http://localhost:9050"
-let isProd = sdkUrl === "https://checkout.hyperswitch.io"
+let isInteg = sdkEnvironment === "integ"
+let isSandbox = sdkEnvironment === "sandbox"
+let isProd = sdkEnvironment === "prod"
+let isLocal = sdkEnvironment === "local"

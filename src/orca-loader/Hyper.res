@@ -62,6 +62,17 @@ let preloader = () => {
 
 let make = (publishableKey, options: option<JSON.t>, analyticsInfo: option<JSON.t>) => {
   try {
+    let isReady =
+      (GlobalVars.isInteg && publishableKey->String.startsWith("pk_snd_")) ||
+      GlobalVars.isProd && publishableKey->String.startsWith("pk_prd_") ||
+      GlobalVars.isSandbox && publishableKey->String.startsWith("pk_snd_") ||
+      (GlobalVars.isLocal && publishableKey->String.startsWith("pk_prdd_"))
+
+    if !isReady {
+      Exn.raiseError("error")
+    }
+
+    Window.setSdkEnvironment(Window.window, GlobalVars.sdkEnvironment)
     let isPreloadEnabled =
       options
       ->Option.getOr(JSON.Encode.null)
