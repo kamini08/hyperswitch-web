@@ -319,6 +319,8 @@ let rec intentCall = (
   open Promise
   let isConfirm = uri->String.includes("/confirm")
   let isCompleteAuthorize = uri->String.includes("/complete_authorize")
+  Console.log2("Is confirm=>", isConfirm)
+  Console.log2("Is complete authorize=>", isCompleteAuthorize)
   let (eventName: OrcaLogger.eventName, initEventName: OrcaLogger.eventName) = switch (
     isConfirm,
     isCompleteAuthorize,
@@ -338,6 +340,7 @@ let rec intentCall = (
   )
   let handleOpenUrl = url => {
     if isPaymentSession {
+      Console.log("let handleOpenUrl = url => { if isPaymentSession")
       Window.replaceRootHref(url)
     } else {
       openUrl(url)
@@ -476,9 +479,11 @@ let rec intentCall = (
         )->then(resolve)
       })
     } else {
+      Console.log("VVVVVVVVVVVVVVVVV")
       res
       ->Fetch.Response.json
       ->then(data => {
+        Console.log("AAA")
         Promise.make(
           (resolve, _) => {
             logApi(
@@ -500,25 +505,35 @@ let rec intentCall = (
             url.searchParams.set("status", intent.status)
 
             let handleProcessingStatus = (paymentType, sdkHandleOneClickConfirmPayment) => {
+              ///sdk
               switch (paymentType, sdkHandleOneClickConfirmPayment) {
               | (Card, _)
               | (Gpay, false)
               | (Applepay, false)
               | (Paypal, false) =>
                 if !isPaymentSession {
+                  Console.log("111")
+                  Utils.handleOnCompletePostMessage(~targetOrigin="*")
+                  Utils.handleOnFocusPostMessage(~targetOrigin="*")
                   closePaymentLoaderIfAny()
                   postSubmitResponse(~jsonData=data, ~url=url.href)
                 } else if confirmParam.redirect === Some("always") {
+                  Console.log("222")
                   handleOpenUrl(url.href)
                 } else {
+                  Console.log("333")
                   resolve(data)
                 }
-              | _ => handleOpenUrl(url.href)
+              | _ => {
+                  Console.log("444")
+                  handleOpenUrl(url.href)
+                }
               }
             }
 
             if intent.status == "requires_customer_action" {
               if intent.nextAction.type_ == "redirect_to_url" {
+                Console.log("FIRSTDDDESDS")
                 handleLogging(
                   ~optLogger,
                   ~value="",
@@ -714,6 +729,7 @@ let rec intentCall = (
                 }
                 resolve(data)
               } else if intent.nextAction.type_ === "invoke_sdk_client" {
+                Console.log("INVOKE SDK CLIENT _________")
                 let nextActionData =
                   intent.nextAction.next_action_data->Option.getOr(JSON.Encode.null)
                 let response =
@@ -723,6 +739,7 @@ let rec intentCall = (
                   ]->getJsonFromArrayOfJson
                 resolve(response)
               } else {
+                Console.log("ELSEEE _________")
                 if !isPaymentSession {
                   postFailedSubmitResponse(
                     ~errortype="confirm_payment_failed",
@@ -1167,6 +1184,7 @@ let useCompleteAuthorize = (optLogger: option<OrcaLogger.loggerMake>, paymentTyp
         ->JSON.stringify
 
       let completeAuthorize = () => {
+        Console.log2("Inside before intent of complete authorize", confirmParam)
         intentCall(
           ~fetchApi,
           ~uri,
@@ -1186,7 +1204,10 @@ let useCompleteAuthorize = (optLogger: option<OrcaLogger.loggerMake>, paymentTyp
         )->ignore
       }
       switch paymentMethodList {
-      | Loaded(_) => completeAuthorize()
+      | Loaded(_) => {
+          Console.log("Coming here for complete authorize")
+          completeAuthorize()
+        }
       | _ => ()
       }
     | None =>

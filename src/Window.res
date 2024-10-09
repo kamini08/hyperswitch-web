@@ -32,6 +32,7 @@ type eventData = {
   clickTriggered: bool,
   ready: bool,
   focus: bool,
+  complete: bool,
   blur: bool,
   confirmTriggered: bool,
   oneClickConfirmTriggered: bool,

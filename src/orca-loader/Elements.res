@@ -93,7 +93,7 @@ let make = (
 
     let unMountPreMountLoaderIframe = () => {
       switch preMountLoaderIframeDiv->Nullable.toOption {
-      | Some(iframe) => iframe->remove
+      | Some(iframe) => () //iframe->remove
       | None => ()
       }
     }
@@ -616,6 +616,7 @@ let make = (
             let returnUrl = dict->getString("return_url", "")
             let redirectUrl = `${returnUrl}?payment_intent_client_secret=${clientSecret}&status=${status}`
             if redirect.contents === "always" {
+              Console.log("redirect.contents === always")
               Window.replaceRootHref(redirectUrl)
               resolve(JSON.Encode.null)
             } else {
@@ -644,6 +645,7 @@ let make = (
 
               let handleErrorResponse = err => {
                 if redirect.contents === "always" {
+                  Console.log("redirect.contents === always 2222")
                   Window.replaceRootHref(url)
                 }
                 messageCurrentWindow([
@@ -705,6 +707,7 @@ let make = (
             ->then(json => json->handleRetrievePaymentResponse)
             ->catch(err => {
               if redirect.contents === "always" {
+                Console.log("redirect.contents === always 3333")
                 Window.replaceRootHref(redirectUrl->JSON.Decode.string->Option.getOr(""))
                 resolve(JSON.Encode.null)
               } else {

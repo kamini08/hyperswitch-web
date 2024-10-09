@@ -28,6 +28,10 @@ let handleOnFocusPostMessage = (~targetOrigin="*") => {
   messageParentWindow([("focus", true->JSON.Encode.bool)], ~targetOrigin)
 }
 
+let handleOnCompletePostMessage = (~targetOrigin="*") => {
+  messageParentWindow([("complete", true->JSON.Encode.bool)], ~targetOrigin)
+}
+
 let handleOnBlurPostMessage = (~targetOrigin="*") => {
   messageParentWindow([("blur", true->JSON.Encode.bool)], ~targetOrigin)
 }
@@ -1147,6 +1151,7 @@ let eventHandlerFunc = (
       | Change
       | Click
       | Ready
+      | Complete
       | Focus
       | ConfirmPayment
       | OneClickConfirmPayment

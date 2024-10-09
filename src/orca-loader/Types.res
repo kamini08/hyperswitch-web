@@ -9,6 +9,7 @@ type eventData = {
   newClassType: string,
   confirmTriggered: bool,
   oneClickConfirmTriggered: bool,
+  complete: bool,
 }
 type event = {key: string, data: eventData, source: Dom.element}
 type eventParam = Event(event) | EventData(eventData) | Empty
@@ -29,6 +30,7 @@ type paymentElement = {
   unmount: unit => unit,
   mount: string => unit,
   focus: unit => unit,
+  complete: unit => unit,
   clear: unit => unit,
 }
 
@@ -115,6 +117,7 @@ let defaultPaymentElement = {
   unmount: () => (),
   mount: _string => (),
   focus: () => (),
+  complete: () => (),
   clear: () => (),
 }
 
@@ -184,7 +187,16 @@ let defaultHyperInstance = {
 }
 
 type eventType =
-  Escape | Change | Click | Ready | Focus | Blur | ConfirmPayment | OneClickConfirmPayment | None
+  | Escape
+  | Change
+  | Click
+  | Ready
+  | Complete
+  | Focus
+  | Blur
+  | ConfirmPayment
+  | OneClickConfirmPayment
+  | None
 
 let eventTypeMapper = event => {
   switch event {
@@ -192,6 +204,7 @@ let eventTypeMapper = event => {
   | "change" => Change
   | "clickTriggered" => Click
   | "ready" => Ready
+  | "complete" => Complete
   | "focus" => Focus
   | "blur" => Blur
   | "confirmTriggered" => ConfirmPayment

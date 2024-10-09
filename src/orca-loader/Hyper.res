@@ -285,6 +285,7 @@ let make = (publishableKey, options: option<JSON.t>, analyticsInfo: option<JSON.
         }
 
         Promise.make((resolve1, _) => {
+          //abcd
           let isReadyPromise = isReadyPromise
           isReadyPromise
           ->Promise.then(readyTimestamp => {
@@ -498,6 +499,7 @@ let make = (publishableKey, options: option<JSON.t>, analyticsInfo: option<JSON.
                 )
                 let url = decodedData->getString("return_url", "/")
                 if val->JSON.Decode.bool->Option.getOr(false) && url !== "/" {
+                  Console.log("rval->JSON.Decode.bool->Option.getOr(false) && url !== /")
                   Window.replaceRootHref(url)
                 } else {
                   resolve(json)

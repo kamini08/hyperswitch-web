@@ -56,6 +56,10 @@ let make = (
         )
       | Click => eventHandlerFunc(ev => ev.data.clickTriggered, eventHandler, Click, "onClick")
       | Ready => eventHandlerFunc(ev => ev.data.ready, eventHandler, Ready, "onReady")
+      | Complete => {
+          Js.log2("onComplete Insideeeeee", eventHandler)
+          eventHandlerFunc(ev => ev.data.complete, eventHandler, Complete, "onComplete")
+        }
       | Focus => eventHandlerFunc(ev => ev.data.focus, eventHandler, Focus, "onFocus")
       | Blur => eventHandlerFunc(ev => ev.data.blur, eventHandler, Blur, "onBlur")
       | ConfirmPayment =>
@@ -84,6 +88,13 @@ let make = (
     }
 
     let focus = () => {
+      iframeRef->Array.forEach(iframe => {
+        let message = [("doFocus", true->JSON.Encode.bool)]->Dict.fromArray
+        iframe->Window.iframePostMessage(message)
+      })
+    }
+
+    let complete = () => {
       iframeRef->Array.forEach(iframe => {
         let message = [("doFocus", true->JSON.Encode.bool)]->Dict.fromArray
         iframe->Window.iframePostMessage(message)
@@ -190,6 +201,8 @@ let make = (
         switch eventDataObject->getOptionalJsonFromJson("openurl") {
         | Some(val) => {
             let url = val->getStringFromJson("")
+            Console.log("eventDataObject->getOptionalJsonFromJson")
+            //After paypal invoke sdk and complete authorize call
             Window.replaceRootHref(url)
           }
         | None => ()
@@ -355,6 +368,7 @@ let make = (
       on,
       collapse,
       blur,
+      complete,
       focus,
       clear,
       unmount,

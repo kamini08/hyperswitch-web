@@ -61,6 +61,7 @@ let loadPaypalSDK = (
                 val->Utils.getDictFromJson->Utils.getString("orderId", "")->resolve,
               ~manualRetry=isManualRetryEnabled,
             )
+            Console.log("Createorder")
           })
         } else {
           loggerState.setLogInfo(
@@ -112,7 +113,8 @@ let loadPaypalSDK = (
             },
             ~handleUserError=true,
           )
-
+          Console.log2("CompleteAuthorize", options.wallets.walletReturnUrl)
+          // Utils.handleOnCompletePostMessage(~targetOrigin="*")
           resolve()
         })
         ->ignore
