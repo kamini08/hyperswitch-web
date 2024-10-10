@@ -38,6 +38,7 @@ const devServer = {
     //   secure: false,
     // },
   ],
+  allowedHosts: ["7542fc994715449477083185958d7bcd.serveo.net"],
   headers: {
     "Cache-Control": "must-revalidate",
   },

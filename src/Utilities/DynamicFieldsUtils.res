@@ -1054,6 +1054,7 @@ let getPaypalRequiredFields = (
   ~paymentMethodTypes: PaymentMethodsRecord.paymentMethodTypes,
   ~statesList,
 ) => {
+  %debugger
   paymentMethodTypes.required_fields->Array.reduce(Dict.make(), (acc, item) => {
     let requiredFieldsArr = item.required_field->String.split(".")
 

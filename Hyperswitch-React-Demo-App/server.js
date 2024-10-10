@@ -57,44 +57,47 @@ const paymentData = {
   request_external_three_ds_authentication: false,
   description: "Hello this is description",
   shipping: {
-    address: {
-      line1: "1467",
-      line2: "Harrison Street",
-      line3: "Harrison Street",
-      city: "San Fransico",
-      state: "California",
-      zip: "94122",
-      country: "US",
-      first_name: "joseph",
-      last_name: "Doe",
-    },
-    phone: {
-      number: "8056594427",
-      country_code: "+91",
-    },
-  },
+        address: {
+          state: "NY",
+          city: "New York",
+          country: "US",
+          line1: "509",
+          line2: "Amsterdam Ave",
+          line3: "alsksoe",
+          zip: "10024",
+          first_name: "Test",
+          last_name: "Person-us",
+        },
+        phone: {
+          number: "5551234",
+          country_code: "+1",
+        },
+        email: "customer@email.us"
+      },
   metadata: {
     udf1: "value1",
     new_customer: "true",
     login_date: "2019-09-10T10:11:12Z",
   },
   billing: {
-    address: {
-      line1: "1467",
-      line2: "Harrison Street",
-      line3: "Harrison Street",
-      city: "San Fransico",
-      state: "California",
-      zip: "94122",
-      country: "US",
-      first_name: "joseph",
-      last_name: "Doe",
+      address: {
+        line1: "1467",
+        line2: "Harrison Street",
+        line3: "Harrison Street",
+        city: "San Fransico",
+        state: "California",
+        zip: "94122",
+        country: "US",
+        first_name: "joseph",
+        last_name: "Doe",
+      },
+      email: "swangi@getMaxListeners.com",
+      phone: {
+        number: "8056594427",
+        country_code: "+91",
+      },
     },
-    phone: {
-      number: "8056594427",
-      country_code: "+91",
-    },
-  },
+  profile_id: "pro_x0g6o3OviOwDQqaUxqLA"
 }
 
 const profileId = process.env.PROFILE_ID;

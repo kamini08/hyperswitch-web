@@ -9,12 +9,12 @@ let loadPaypalSDK = (
   ~isManualRetryEnabled,
   ~paymentMethodListValue,
   ~isGuestCustomer,
-  ~intent: PaymentHelpers.paymentIntent,
+  ~postSessionTokens: PaymentHelpers.paymentIntent,
   ~options: PaymentType.options,
   ~publishableKey,
   ~paymentMethodTypes,
   ~stateJson,
-  ~completeAuthorize: PaymentHelpers.completeAuthorize,
+  ~confirm: PaymentHelpers.paymentIntent,
   ~handleCloseLoader,
   ~areOneClickWalletsRendered: (
     RecoilAtoms.areOneClickWalletsRendered => RecoilAtoms.areOneClickWalletsRendered
@@ -49,8 +49,10 @@ let loadPaypalSDK = (
             ~paymentType=paymentMethodListValue.payment_type,
             ~body,
           )
+          // %debugger
+          Js.log3("<<>>22", body, modifiedPaymentBody)
           Promise.make((resolve, _) => {
-            intent(
+            postSessionTokens(
               ~bodyArr=modifiedPaymentBody,
               ~confirmParam={
                 return_url: options.wallets.walletReturnUrl,
@@ -76,6 +78,7 @@ let loadPaypalSDK = (
       if !options.readOnly {
         actions.order.get()
         ->then(val => {
+          %debugger
           let purchaseUnit =
             val
             ->Utils.getDictFromJson
@@ -98,22 +101,49 @@ let loadPaypalSDK = (
             ~statesList=stateJson,
           )
 
+          let (connectors, _) =
+            paymentMethodListValue->PaymentUtils.getConnectors(Wallets(Paypal(SDK)))
+          let body = PaymentBody.paypalSdkBody(~token="", ~connectors)
+          let modifiedPaymentBody = PaymentUtils.appendedCustomerAcceptance(
+            ~isGuestCustomer,
+            ~paymentType=paymentMethodListValue.payment_type,
+            ~body,
+          )
+
           let bodyArr =
             requiredFieldsBody
             ->JSON.Encode.object
             ->Utils.unflattenObject
             ->Utils.getArrayOfTupleFromDict
 
-          completeAuthorize(
-            ~bodyArr,
-            ~confirmParam={
-              return_url: options.wallets.walletReturnUrl,
-              publishableKey,
-            },
-            ~handleUserError=true,
-          )
+          let x=bodyArr->Array.concatMany([modifiedPaymentBody])
 
-          resolve()
+          Js.log3("<<>>23", body, modifiedPaymentBody)
+
+          // confirm(
+          //   ~bodyArr=x,
+          //   ~confirmParam={
+          //     return_url: options.wallets.walletReturnUrl,
+          //     publishableKey,
+          //   },
+          //   ~handleUserError=true,
+          // )
+
+          // resolve()
+
+          Promise.make((resolve, _) => {
+            confirm(
+              ~bodyArr=x,
+              ~confirmParam={
+                return_url: options.wallets.walletReturnUrl,
+                publishableKey,
+              },
+              ~handleUserError=true,
+              ~intentCallback=val =>
+                val->Utils.getDictFromJson->Utils.getString("orderId", "")->resolve,
+              ~manualRetry=true,
+            )
+          })
         })
         ->ignore
       }
